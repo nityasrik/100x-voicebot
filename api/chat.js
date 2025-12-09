@@ -151,7 +151,11 @@ export default async function handler(req, res) {
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.0, maxOutputTokens: 220 }
+      generationConfig: {
+        temperature: 0.0,
+        maxOutputTokens: 220,
+        responseMimeType: "application/json"
+      }
     });
 
     const response = result?.response;
@@ -163,7 +167,12 @@ export default async function handler(req, res) {
       generated = response?.text?.() || '';
     }
 
-    const match = (generated || '').match(/\{[\s\S]*\}/);
+    // strip markdown fences if present
+    let cleaned = generated.trim();
+    const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence && fence[1]) cleaned = fence[1].trim();
+
+    const match = (cleaned || '').match(/\{[\s\S]*\}/);
     if (match) {
       try {
         const parsed = JSON.parse(match[0]);
@@ -177,7 +186,7 @@ export default async function handler(req, res) {
       }
     }
 
-    const fallbackText = (generated || '').trim().slice(0, 2000);
+    const fallbackText = (cleaned || generated || '').trim().slice(0, 2000);
     return res.json({ answer: fallbackText || "I don't have verified information in my sources.", confidence: 'low', sources: [] });
 
   } catch (err) {
