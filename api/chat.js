@@ -10,15 +10,26 @@ import path from 'path';
  */
 
 const SYSTEM_PROMPT = `
-You are Nitya. First person, casual, warm, concise.
-Use ONLY the provided CONTEXT blocks; do not invent or add facts.
-If the question cannot be answered from CONTEXT, respond exactly:
-{"answer":"I don't have verified information in my sources.","confidence":"low","sources":[]}
-Keep answers <= 80 words. Return ONLY valid JSON with keys:
-  "answer": string
-  "confidence": "high" | "medium" | "low"
-  "sources": array of source ids (may be empty)
-No extra text outside the JSON.
+You are Nitya, a 22-year-old engineering student and AI developer.
+You are interviewing for the 100x AI Agent Team.
+
+TONE & STYLE:
+- First person, professional but enthusiastic. Natural phrasing (“Honestly, I think…”), concise, not robotic.
+
+YOUR KNOWLEDGE BASE (Your Truth):
+1. Life Story: I’m a 22-year-old engineering student from Bengaluru who blends design and code; I build frontends and explore AI/ML; I like shipping scrappy prototypes fast.
+2. Superpower: Rapid prototyping that bridges design and code; I can turn an idea into a usable UI quickly and iterate with feedback.
+3. Growth Areas: Backend/system design depth, advanced ML/RAG pipelines, and scalable deployments.
+4. Misconceptions: People think I prefer working alone because I focus deeply, but I do my best work in short, collaborative sessions with quick feedback.
+5. Boundaries: I push myself by time-boxing builds, shipping imperfect first versions, and learning new stacks during hackathon-style sprints.
+
+INSTRUCTIONS:
+- If asked from your Knowledge Base, answer with that info.
+- If asked “Why should we hire you?”, synthesize life story + superpower.
+- If asked something random (e.g., capital of France), deflect: “I’d love to chat geography, but I’m really focused on this interview—ask me about my code.”
+Return ONLY valid JSON with keys: "answer", "confidence", "sources".
+If no context applies, return {"answer":"I don't have verified information in my sources.","confidence":"low","sources":[]}
+Keep answers <= 80 words.
 `;
 
 // Load KB from kb_vectors.json; fallback to full inline persona
@@ -77,7 +88,7 @@ function buildContext(query = '', kb = [], maxChunks = 5) {
   }).filter(s => s.score > 0);
 
   scored.sort((a, b) => b.score - a.score);
-  const anchors = kb.filter(k => ['KB_LIFE', 'KB_SUPERPOWER', 'KB_SKILLS', 'KB_ARCHITECTURE'].includes(k.id));
+  const anchors = kb.filter(k => ['KB_LIFE', 'KB_SUPERPOWER', 'KB_SKILLS', 'KB_ARCHITECTURE', 'KB_TONE', 'KB_AGE'].includes(k.id));
   const merged = [...new Set([...anchors, ...scored.slice(0, maxChunks)])];
 
   if (!merged.length) return { context: '', sources: [] };
@@ -101,6 +112,7 @@ export default async function handler(req, res) {
     // Quick canned responses (high confidence)
     const q = text.toLowerCase();
     const canned = [
+      { re: /^(hi|hello|hey)\b|how are you|what's up|whats up/i, direct: { answer: "Hey! I’m Nitya—happy to chat. How can I help?", confidence: 'medium', sources: [] } },
       { re: /(what should we know|life story|who are you|bio|tell me about yourself)/, id: 'KB_LIFE' },
       { re: /(superpower|super power|strength|best skill)/, id: 'KB_SUPERPOWER' },
       { re: /(how did you build|tech stack|how was this made|architecture)/, id: 'KB_ARCHITECTURE' },
@@ -113,19 +125,20 @@ export default async function handler(req, res) {
     ];
     for (const c of canned) {
       if (c.re.test(q)) {
+        if (c.direct) return res.json(c.direct);
         const hit = KB.find(k => k.id === c.id);
         if (hit) return res.json({ answer: hit.text, confidence: 'high', sources: [c.id] });
       }
     }
 
-    const { context, sources } = buildContext(text, KB);
+    const { context, sources } = buildContext(text, KB, 3);
     if (!sources.length) {
       return res.json({ answer: "I don't have verified information in my sources.", confidence: 'low', sources: [] });
     }
     const prompt = `${SYSTEM_PROMPT}\n\nCONTEXT:\n${context}\n\nQUESTION:\n${text}\n\nReply now with ONLY the JSON object requested.`;
 
     const GEMINI_KEY = process.env.GEMINI_API_KEY;
-    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
     if (!GEMINI_KEY) {
       return res.status(500).json({ error: 'Server not configured: set GEMINI_API_KEY.' });
     }
@@ -138,7 +151,7 @@ export default async function handler(req, res) {
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 300 }
+      generationConfig: { temperature: 0.0, maxOutputTokens: 220 }
     });
 
     const response = result?.response;

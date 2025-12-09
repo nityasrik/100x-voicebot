@@ -25,6 +25,8 @@
   {"id":"KB_COMM","text":"Communication: prefers concise, friendly, first-person responses and short calls or Looms over long threads."},
   {"id":"KB_TIME","text":"Location/timezone: Bengaluru (IST); can adjust for remote collaboration with prior notice."},
   {"id":"KB_WEAKNESS","text":"Current focus areas: strengthening backend depth and system design; avoids overcommitting by time-boxing work."},
-  {"id":"KB_ARCHITECTURE","text":"Architecture: React + Vite frontend, Vercel serverless backend, Gemini Pro for intelligence, in-memory RAG over the Nitya KB, and ElevenLabs for voice output."}
+  {"id":"KB_ARCHITECTURE","text":"Architecture: React + Vite frontend, Vercel serverless backend, Gemini Pro for intelligence, in-memory RAG over the Nitya KB, and ElevenLabs for voice output."},
+  {"id":"KB_AGE","text":"Age: 22 years old; birthday: November 24."},
+  {"id":"KB_TONE","text":"Tone: bubbly, sweet, and friendly while staying concise and clear."}
 ]
 

@@ -237,8 +237,8 @@ function App() {
           <div className="small">Speak or type; I’ll answer and speak back.</div>
         </div>
         <div className="small" style={{display:'flex', alignItems:'center', gap:8}}>
-          <span>Live: {DEMO_MODE ? 'demo' : 'Gemini'}</span>
-          <span className={`pill ${status}`}>{status === 'thinking' ? 'typing…' : status}</span>
+          <span className={`dot-status ${status}`}></span>
+          <span>{status === 'error' ? 'Check connection' : 'Ready'}</span>
           <label className="toggle">
             <input
               type="checkbox"
@@ -248,7 +248,7 @@ function App() {
             />
             <span className="toggle-label">{isVoiceMode ? 'Voice' : 'Chat'}</span>
           </label>
-          <button className="mic ghost small-ghost" onClick={stopSpeaking} aria-label="Stop audio">Stop</button>
+          <button className="mic ghost small-ghost" onClick={stopSpeaking} aria-label="Silence audio">Silence</button>
         </div>
       </div>
 
@@ -256,16 +256,20 @@ function App() {
         {chat.length === 0 && <div className="small">Try a quick prompt or hold the mic.</div>}
         {chat.map((m, i) => (
           <div key={i} className={`message ${m.who === 'you' ? 'you' : 'bot'}`}>
-            <strong>{m.who === 'you' ? 'You' : 'Nitya'}:</strong>{' '}
-            {m.typing ? (
-              <span className="typing">
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </span>
-            ) : (
-              m.text
-            )}
+            <div className="msg-head">
+              <span className="avatar">{m.who === 'you' ? 'You' : 'N'}</span>
+              <div className="msg-body">
+                {m.typing ? (
+                  <span className="typing">
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                  </span>
+                ) : (
+                  m.text
+                )}
+              </div>
+            </div>
             <div className="message-meta">
               {m.who === 'bot' && !m.typing && (m.confidence || (m.sources && m.sources.length)) && (
                 <div className="chips">
@@ -281,7 +285,7 @@ function App() {
                   aria-label="Play this message"
                   onClick={() => speak(m.text)}
                 >
-                  🔊
+                  {isSpeaking ? <span className="mini-bars speaking"></span> : '🔊'}
                 </button>
               )}
             </div>
@@ -290,17 +294,6 @@ function App() {
       </div>
 
       <div className="input-row">
-        <button
-          className={`mic ghost ${pulse ? 'pulse' : ''}`}
-          aria-label="Hold to speak with microphone"
-          onMouseDown={startListening}
-          onTouchStart={startListening}
-          onMouseUp={stopListening}
-          onTouchEnd={stopListening}
-        >
-          {listening ? 'Release to send' : 'Hold to speak'}
-        </button>
-        <div className="viz">{isSpeaking || listening ? <span className="bar on"></span> : <span className="bar" ></span>}<span className={`bar ${isSpeaking || listening ? 'on' : ''}`}></span><span className={`bar ${isSpeaking || listening ? 'on' : ''}`}></span></div>
         <input
           id="textInput"
           aria-label="Type a question"
@@ -313,6 +306,16 @@ function App() {
             }
           }}
         />
+        <button
+          className={`mic ghost ${pulse ? 'pulse' : ''}`}
+          aria-label="Hold to speak with microphone"
+          onMouseDown={startListening}
+          onTouchStart={startListening}
+          onMouseUp={stopListening}
+          onTouchEnd={stopListening}
+        >
+          {listening ? 'Listening…' : 'Hold to speak'}
+        </button>
         <button
           className="mic"
           aria-label="Send typed question"
