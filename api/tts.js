@@ -31,7 +31,8 @@ export default async function handler(req, res) {
         voice_settings: {
           stability: 0.5,
           similarity_boost: 0.7
-        }
+        },
+        model_id: 'eleven_turbo_v2_5'
       })
     });
 

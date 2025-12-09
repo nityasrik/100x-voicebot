@@ -22,11 +22,22 @@ function App() {
   const [errorMsg, setErrorMsg] = useState('');
   const [pulse, setPulse] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false); // default silent
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const chatRef = useRef();
+  const audioRef = useRef(null);
 
   const append = (who, text, meta = {}) => {
     setChat(c => [...c, { who, text, ...meta }]);
     setTimeout(() => { chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' }); }, 50);
+  };
+
+  const stopSpeaking = () => {
+    window.speechSynthesis?.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsSpeaking(false);
   };
 
   // Web Speech API
@@ -60,6 +71,7 @@ function App() {
   };
 
   const sendToServer = async (text) => {
+    stopSpeaking();
     // Normalize
     const norm = (s) => s.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
     const q = norm(text);
@@ -139,10 +151,14 @@ function App() {
     setErrorMsg('');
 
     try {
+      const history = chat
+        .filter(m => !m.typing)
+        .map(m => ({ role: m.who === 'you' ? 'user' : 'assistant', content: m.text }))
+        .slice(-6);
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text, history })
       });
       if (!res.ok) {
         const txt = await res.text();
@@ -169,6 +185,7 @@ function App() {
   };
 
   const speak = async (text) => {
+    stopSpeaking();
     // Prefer server TTS (ElevenLabs); fallback to browser speechSynthesis
     try {
       const res = await fetch('/api/tts', {
@@ -180,6 +197,10 @@ function App() {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => setIsSpeaking(false);
+        audio.onpause = () => setIsSpeaking(false);
+        setIsSpeaking(true);
         audio.play();
         return;
       }
@@ -190,13 +211,15 @@ function App() {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'en-US';
     window.speechSynthesis.cancel();
+    u.onend = () => setIsSpeaking(false);
+    setIsSpeaking(true);
     window.speechSynthesis.speak(u);
   };
 
   const quickAsk = async (key) => {
     const mapping = {
       life: "What should we know about your life story in a few sentences?",
-      superpower: "What's your #1 superpower?",
+      architecture: "How did you build this bot? What stack did you use?",
       grow: "What are the top 3 areas you'd like to grow in?",
       misconception: "What misconception do your coworkers have about you?",
       push: "How do you push your boundaries and limits?"
@@ -225,6 +248,7 @@ function App() {
             />
             <span className="toggle-label">{isVoiceMode ? 'Voice' : 'Chat'}</span>
           </label>
+          <button className="mic ghost small-ghost" onClick={stopSpeaking} aria-label="Stop audio">Stop</button>
         </div>
       </div>
 
@@ -244,9 +268,11 @@ function App() {
             )}
             <div className="message-meta">
               {m.who === 'bot' && !m.typing && (m.confidence || (m.sources && m.sources.length)) && (
-                <div className="small" style={{ marginTop: 4 }}>
-                  {m.confidence && <span>Confidence: {m.confidence} </span>}
-                  {m.sources && m.sources.length ? <span>• Sources: {m.sources.join(', ')}</span> : null}
+                <div className="chips">
+                  {m.confidence && <span className="chip">Confidence: {m.confidence}</span>}
+                  {m.sources && m.sources.length ? m.sources.map(s => (
+                    <span key={s} className="chip">{s.replace('KB_', '')}</span>
+                  )) : null}
                 </div>
               )}
               {m.who === 'bot' && !m.typing && !isVoiceMode && (
@@ -274,6 +300,7 @@ function App() {
         >
           {listening ? 'Release to send' : 'Hold to speak'}
         </button>
+        <div className="viz">{isSpeaking || listening ? <span className="bar on"></span> : <span className="bar" ></span>}<span className={`bar ${isSpeaking || listening ? 'on' : ''}`}></span><span className={`bar ${isSpeaking || listening ? 'on' : ''}`}></span></div>
         <input
           id="textInput"
           aria-label="Type a question"
@@ -302,7 +329,7 @@ function App() {
 
       <div className="quick">
         <button aria-label="Ask about life story" onClick={() => { quickAsk('life') }}>Life</button>
-        <button aria-label="Ask about superpower" onClick={() => { quickAsk('superpower') }}>Superpower</button>
+        <button aria-label="Ask about how this bot was built" onClick={() => { quickAsk('architecture') }}>How I built this</button>
         <button aria-label="Ask about areas to grow" onClick={() => { quickAsk('grow') }}>Growth</button>
         <button aria-label="Ask about coworker misconception" onClick={() => quickAsk('misconception')}>Misconception</button>
         <button aria-label="Ask about pushing boundaries" onClick={() => quickAsk('push')}>Boundaries</button>

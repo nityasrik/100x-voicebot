@@ -131,6 +131,11 @@ body{
   font-weight:600;
   color:var(--text);
 }
+.small-ghost{
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:0.85rem;
+}
 .message-meta{
   display:flex;
   align-items:center;
@@ -146,6 +151,36 @@ body{
   cursor:pointer;
   backdrop-filter: blur(4px);
 }
+.chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:6px;
+}
+.chip{
+  background:rgba(255,255,255,0.2);
+  border:1px solid rgba(255,255,255,0.3);
+  border-radius:999px;
+  padding:4px 10px;
+  font-size:0.8rem;
+}
+.viz{
+  display:flex;
+  align-items:flex-end;
+  gap:3px;
+  width:32px;
+  height:22px;
+}
+.bar{
+  width:6px;
+  height:8px;
+  border-radius:3px;
+  background:rgba(0,0,0,0.08);
+  transition: all 0.18s ease;
+}
+.bar.on:nth-child(1){ height:16px; background:var(--accent); }
+.bar.on:nth-child(2){ height:20px; background:var(--accent-strong); }
+.bar.on:nth-child(3){ height:14px; background:var(--accent); }
 .mic:disabled{
   opacity:0.6;
   cursor:not-allowed;

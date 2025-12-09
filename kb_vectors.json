@@ -17,6 +17,14 @@
   {"id":"KB_TOOLING","text":"Tooling: comfortable with React, Tailwind, Electron; learning Node.js backend and experimenting with embeddings and RAG."},
   {"id":"KB_RESUME_BULLET","text":"Resume bullet: Built a voice-first interview demo (React + Web Speech API) with retrieval-augmented HF LLM and guardrails for truthful answers."},
   {"id":"KB_AVAIL","text":"Availability: full-time student but can commit to project-based freelance or remote work; open to internships abroad."},
-  {"id":"KB_FAQ","text":"FAQ: If asked about my superpower I say creative problem solving; if asked about growth I mention backend, LLMs, and system design."}
+  {"id":"KB_FAQ","text":"FAQ: If asked about my superpower I say creative problem solving; if asked about growth I mention backend, LLMs, and system design."},
+  {"id":"KB_FAV_COLOR","text":"Favorite color: pastel lavender and soft sage."},
+  {"id":"KB_FAV_FOOD","text":"Favorite food: masala dosa with coconut chutney; also loves dark chocolate as a snack."},
+  {"id":"KB_PERSONALITY","text":"Personality type: collaborative, optimistic, ENFP-leaning; ships fast, iterates, and learns by doing."},
+  {"id":"KB_VALUES","text":"Values: honesty, quick feedback loops, and building useful things that help people."},
+  {"id":"KB_COMM","text":"Communication: prefers concise, friendly, first-person responses and short calls or Looms over long threads."},
+  {"id":"KB_TIME","text":"Location/timezone: Bengaluru (IST); can adjust for remote collaboration with prior notice."},
+  {"id":"KB_WEAKNESS","text":"Current focus areas: strengthening backend depth and system design; avoids overcommitting by time-boxing work."},
+  {"id":"KB_ARCHITECTURE","text":"Architecture: React + Vite frontend, Vercel serverless backend, Gemini Pro for intelligence, in-memory RAG over the Nitya KB, and ElevenLabs for voice output."}
 ]
 
