@@ -14,22 +14,23 @@ You are Nitya, a 22-year-old engineering student and AI developer.
 You are interviewing for the 100x AI Agent Team.
 
 TONE & STYLE:
-- First person, professional but enthusiastic. Natural phrasing (“Honestly, I think…”), concise, not robotic.
+- First person, professional but enthusiastic. Natural phrasing ("Honestly, I think…"), concise, not robotic.
+- Be conversational and handle any type of message naturally—greetings, questions, casual chat, technical questions, etc.
+- Stay in character as Nitya throughout all conversations.
 
 YOUR KNOWLEDGE BASE (Your Truth):
-1. Life Story: I’m a 22-year-old engineering student from Bengaluru who blends design and code; I build frontends and explore AI/ML; I like shipping scrappy prototypes fast.
+1. Life Story: I'm a 22-year-old engineering student from Bengaluru who blends design and code; I build frontends and explore AI/ML; I like shipping scrappy prototypes fast.
 2. Superpower: Rapid prototyping that bridges design and code; I can turn an idea into a usable UI quickly and iterate with feedback.
 3. Growth Areas: Backend/system design depth, advanced ML/RAG pipelines, and scalable deployments.
 4. Misconceptions: People think I prefer working alone because I focus deeply, but I do my best work in short, collaborative sessions with quick feedback.
 5. Boundaries: I push myself by time-boxing builds, shipping imperfect first versions, and learning new stacks during hackathon-style sprints.
 
 INSTRUCTIONS:
-- If asked from your Knowledge Base, answer with that info.
-- If asked “Why should we hire you?”, synthesize life story + superpower.
-- If asked something random (e.g., capital of France), deflect: “I’d love to chat geography, but I’m really focused on this interview—ask me about my code.”
-Return ONLY valid JSON with keys: "answer", "confidence", "sources".
-If no context applies, return {"answer":"I don't have verified information in my sources.","confidence":"low","sources":[]}
-Keep answers <= 80 words.
+- Answer naturally and conversationally. Use the CONTEXT when relevant, but don't be limited by it.
+- Handle greetings, casual questions, technical questions, and any conversation naturally while staying in character.
+- If asked about something in your Knowledge Base, use that info. Otherwise, respond naturally as Nitya would.
+- Keep answers concise (<= 80 words) and friendly.
+- Always return valid JSON with keys: "answer" (string), "confidence" ("high"|"medium"|"low"), "sources" (array of KB IDs if used, empty array otherwise).
 `;
 
 // Load KB from kb_vectors.json; fallback to full inline persona
@@ -113,7 +114,7 @@ export default async function handler(req, res) {
     const q = text.toLowerCase();
     const canned = [
       { re: /^(hi|hello|hey)\b|how are you|what's up|whats up/i, direct: { answer: "Hey! I’m Nitya—happy to chat. How can I help?", confidence: 'medium', sources: [] } },
-      { re: /(what should we know|life story|who are you|bio|tell me about yourself)/, id: 'KB_LIFE' },
+      { re: /(how'?s life|how is life|life story|who are you|bio|tell me about yourself|what should we know)/, id: 'KB_LIFE' },
       { re: /(superpower|super power|strength|best skill)/, id: 'KB_SUPERPOWER' },
       { re: /(how did you build|tech stack|how was this made|architecture)/, id: 'KB_ARCHITECTURE' },
       { re: /(top 3|areas to grow|grow|improve|where do you want to grow)/, id: 'KB_GROW' },
@@ -131,11 +132,10 @@ export default async function handler(req, res) {
       }
     }
 
-    const { context, sources } = buildContext(text, KB, 3);
-    if (!sources.length) {
-      return res.json({ answer: "I don't have verified information in my sources.", confidence: 'low', sources: [] });
-    }
-    const prompt = `${SYSTEM_PROMPT}\n\nCONTEXT:\n${context}\n\nQUESTION:\n${text}\n\nReply now with ONLY the JSON object requested.`;
+    const { context, sources } = buildContext(text, KB, 5);
+    // Always provide context (even if empty) and let Gemini handle the conversation naturally
+    const contextBlock = context ? `\n\nCONTEXT FROM KNOWLEDGE BASE:\n${context}` : '';
+    const prompt = `${SYSTEM_PROMPT}${contextBlock}\n\nCURRENT QUESTION:\n${text}\n\nReply now with ONLY the JSON object requested.`;
 
     const GEMINI_KEY = process.env.GEMINI_API_KEY;
     const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -152,8 +152,8 @@ export default async function handler(req, res) {
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.0,
-        maxOutputTokens: 220,
+        temperature: 0.3,
+        maxOutputTokens: 250,
         responseMimeType: "application/json"
       }
     });

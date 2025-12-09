@@ -22,9 +22,13 @@ export default async function handler(req, res) {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'ELEVENLABS_API_KEY not set' });
 
-    // 3. SET YOUR NEW VOICE ID HERE
-    // Using the ID from ElevenLabs: 6BZyx2XekeeXOkTVn8un
-    const voiceId = '6BZyx2XekeeXOkTVn8un';
+    // ---------------------------------------------------------
+    // THE FIX: HARDCODED ID (No process.env allowed here)
+    const voiceId = 'm8ysB8KEJV5BeYQnOtWN';
+
+    // THE TRUTH TEST: Watch your terminal when you run this
+    console.log("🚨 DEBUG - VOICE ID BEING USED:", voiceId);
+    // ---------------------------------------------------------
 
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
     const resp = await fetch(url, {
@@ -34,27 +38,26 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        text, // We are sending the CLEAN text now
+        text,
+        model_id: 'eleven_turbo_v2_5',
         voice_settings: {
           stability: 0.5,
           similarity_boost: 0.7
-        },
-        model_id: 'eleven_turbo_v2_5'
+        }
       })
     });
 
     if (!resp.ok) {
       const body = await resp.text().catch(() => '<no body>');
       console.error('TTS error', resp.status, body);
-      return res.status(502).json({ error: 'TTS failed', details: body });
+      return res.status(502).json({ error: 'TTS failed' });
     }
 
     const audio = Buffer.from(await resp.arrayBuffer());
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Content-Length', audio.length);
     return res.status(200).send(audio);
   } catch (err) {
     console.error('TTS server error', err);
-    return res.status(500).json({ error: 'internal server error', details: String(err) });
+    return res.status(500).json({ error: 'Error' });
   }
 }

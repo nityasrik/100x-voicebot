@@ -231,14 +231,17 @@ function App() {
 
   return (
     <div className="container">
+      {/* Header */}
       <div className="header">
-        <div>
-          <div className="title">Nitya — Voice Assistant</div>
-          <div className="small">Speak or type; I’ll answer and speak back.</div>
+        <div className="header-left">
+          <h1 className="title">Nitya — Voice Assistant</h1>
+          <p className="subtitle">Speak or type; I'll answer and speak back.</p>
         </div>
-        <div className="small" style={{display:'flex', alignItems:'center', gap:8}}>
-          <span className={`dot-status ${status}`}></span>
-          <span>{status === 'error' ? 'Check connection' : 'Ready'}</span>
+        <div className="header-controls">
+          <div className="status-group">
+            <span className={`dot-status ${status}`}></span>
+            <span className="status-text">{status === 'error' ? 'Check connection' : 'Ready'}</span>
+          </div>
           <label className="toggle">
             <input
               type="checkbox"
@@ -248,18 +251,25 @@ function App() {
             />
             <span className="toggle-label">{isVoiceMode ? 'Voice' : 'Chat'}</span>
           </label>
-          <button className="mic ghost small-ghost" onClick={stopSpeaking} aria-label="Silence audio">Silence</button>
+          <button className="btn-silence" onClick={stopSpeaking} aria-label="Silence audio">
+            Silence
+          </button>
         </div>
       </div>
 
+      {/* Chat Area */}
       <div ref={chatRef} className="chat">
-        {chat.length === 0 && <div className="small">Try a quick prompt or hold the mic.</div>}
+        {chat.length === 0 && (
+          <div className="chat-empty">
+            <p>Try a quick prompt or hold the mic to start.</p>
+          </div>
+        )}
         {chat.map((m, i) => (
           <div key={i} className={`message-row ${m.who === 'you' ? 'you' : 'bot'}`}>
             <div className={`message ${m.who === 'you' ? 'you' : 'bot'}`}>
-              <div className="msg-head">
+              <div className="message-content">
                 <span className="avatar">{m.who === 'you' ? 'You' : 'N'}</span>
-                <div className="msg-body">
+                <div className="message-text">
                   {m.typing ? (
                     <span className="typing">
                       <span className="dot"></span>
@@ -271,76 +281,86 @@ function App() {
                   )}
                 </div>
               </div>
-              <div className="message-meta">
-                {m.who === 'bot' && !m.typing && (m.confidence || (m.sources && m.sources.length)) && (
-                  <div className="chips">
-                    {m.confidence && <span className="chip">Confidence: {m.confidence}</span>}
-                    {m.sources && m.sources.length ? m.sources.map(s => (
-                      <span key={s} className="chip">{s.replace('KB_', '')}</span>
-                    )) : null}
-                  </div>
-                )}
-                {m.who === 'bot' && !m.typing && !isVoiceMode && (
-                  <button
-                    className="play-btn"
-                    aria-label="Play this message"
-                    onClick={() => speak(m.text)}
-                  >
-                    {isSpeaking ? <span className="mini-bars speaking"></span> : '🔊'}
-                  </button>
-                )}
-              </div>
+              {m.who === 'bot' && !m.typing && (
+                <div className="message-footer">
+                  {(m.confidence || (m.sources && m.sources.length)) && (
+                    <div className="chips">
+                      {m.confidence && <span className="chip">Confidence: {m.confidence}</span>}
+                      {m.sources && m.sources.length ? m.sources.map(s => (
+                        <span key={s} className="chip">{s.replace('KB_', '')}</span>
+                      )) : null}
+                    </div>
+                  )}
+                  {!isVoiceMode && (
+                    <button
+                      className="btn-play"
+                      aria-label="Play this message"
+                      onClick={() => speak(m.text)}
+                    >
+                      {isSpeaking ? <span className="waveform"></span> : '🔊'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="input-row">
-        <input
-          id="textInput"
-          aria-label="Type a question"
-          placeholder="Ask me anything..."
-          style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', color: 'inherit' }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              const v = e.target.value.trim();
-              if (v) { append('you', v); sendToServer(v); e.target.value = ''; }
-            }
-          }}
-        />
-        <button
-          className={`mic ghost ${pulse ? 'pulse' : ''}`}
-          aria-label="Hold to speak with microphone"
-          onMouseDown={startListening}
-          onTouchStart={startListening}
-          onMouseUp={stopListening}
-          onTouchEnd={stopListening}
-        >
-          {listening ? 'Listening…' : 'Hold to speak'}
-        </button>
-        <button
-          className="mic"
-          aria-label="Send typed question"
-          disabled={status === 'thinking'}
-          onClick={() => {
-            const el = document.getElementById('textInput');
-            const v = el.value.trim();
-            if (v) { append('you', v); sendToServer(v); el.value = ''; }
-          }}
-        >
-          {status === 'thinking' ? '…' : 'Send'}
-        </button>
+      {/* Input Section */}
+      <div className="input-section">
+        <div className="input-row">
+          <input
+            id="textInput"
+            className="input-field"
+            aria-label="Type a question"
+            placeholder="Ask me anything..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const v = e.target.value.trim();
+                if (v) { append('you', v); sendToServer(v); e.target.value = ''; }
+              }
+            }}
+          />
+          <button
+            className={`btn-mic ${pulse ? 'pulse' : ''}`}
+            aria-label="Hold to speak with microphone"
+            onMouseDown={startListening}
+            onTouchStart={startListening}
+            onMouseUp={stopListening}
+            onTouchEnd={stopListening}
+          >
+            {listening ? 'Listening…' : '🎤'}
+          </button>
+          <button
+            className="btn-send"
+            aria-label="Send typed question"
+            disabled={status === 'thinking'}
+            onClick={() => {
+              const el = document.getElementById('textInput');
+              const v = el.value.trim();
+              if (v) { append('you', v); sendToServer(v); el.value = ''; }
+            }}
+          >
+            {status === 'thinking' ? '…' : 'Send'}
+          </button>
+        </div>
+
+        {/* Quick Prompts */}
+        <div className="quick-prompts">
+          <span className="quick-label">Or try:</span>
+          <div className="quick-buttons">
+            <button onClick={() => quickAsk('life')}>Life</button>
+            <button onClick={() => quickAsk('architecture')}>How I built this</button>
+            <button onClick={() => quickAsk('grow')}>Growth</button>
+            <button onClick={() => quickAsk('misconception')}>Misconception</button>
+            <button onClick={() => quickAsk('push')}>Boundaries</button>
+          </div>
+        </div>
       </div>
 
-      <div className="quick">
-        <button aria-label="Ask about life story" onClick={() => { quickAsk('life') }}>Life</button>
-        <button aria-label="Ask about how this bot was built" onClick={() => { quickAsk('architecture') }}>How I built this</button>
-        <button aria-label="Ask about areas to grow" onClick={() => { quickAsk('grow') }}>Growth</button>
-        <button aria-label="Ask about coworker misconception" onClick={() => quickAsk('misconception')}>Misconception</button>
-        <button aria-label="Ask about pushing boundaries" onClick={() => quickAsk('push')}>Boundaries</button>
-      </div>
-
-      {errorMsg && <div className="small error-banner">{errorMsg}</div>}
+      {/* Error Banner */}
+      {errorMsg && <div className="error-banner">{errorMsg}</div>}
     </div>
   );
 }
