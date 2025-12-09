@@ -1,32 +1,31 @@
-import fetch from 'node-fetch';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from 'fs';
 import path from 'path';
 
 /**
  * Serverless handler for /api/chat
- * - Uses HF Inference API (model configurable via HF_MODEL env var)
+ * - Uses Google Gemini Generative Language API (model configurable via GEMINI_MODEL env var)
  * - Strict system prompt: JSON-only output with keys {answer, confidence, sources}
  * - Small retrieval over a local KNOWLEDGE_BASE to reduce hallucinations
  *
- * Set env vars on deployment:
- *   HF_API_TOKEN = <your huggingface access token>
- *   HF_MODEL     = <model id, e.g. "mistralai/Mixtral-8x7B-Instruct-v0.1">
+ * Env vars:
+ *   GEMINI_API_KEY = <your Gemini API key>
+ *   GEMINI_MODEL   = <model id, default "gemini-1.5-flash">
  */
 
 const SYSTEM_PROMPT = `
-You are the voice of the applicant Nitya. Follow these rules strictly:
+You are Nitya. Stay in first person, casual, warm, concise.
 
-1) Use ONLY the provided CONTEXT blocks. Do not invent facts. Speak in first person with a casual, warm tone.
-2) If the question cannot be answered using CONTEXT, respond with exactly:
+Rules:
+1) Use ONLY the provided CONTEXT blocks; do not invent facts.
+2) If the question cannot be answered from CONTEXT, respond with exactly:
    {"answer":"I don't have verified information in my sources.","confidence":"low","sources":[]}
-3) Keep answers concise (<= 80 words), friendly, and human.
-4) ALWAYS return valid JSON and nothing else with keys:
+3) Keep answers <= 80 words.
+4) ALWAYS return valid JSON ONLY with keys:
    - "answer": string
-   - "confidence": one of "high", "medium", "low"
+   - "confidence": "high" | "medium" | "low"
    - "sources": array of source ids (may be empty)
 5) No extra text outside the JSON object.
-
-End of instructions.
 `;
 
 // Load KB from kb_vectors.json (root). Falls back to a minimal inline KB if missing.
@@ -118,43 +117,33 @@ export default async function handler(req, res) {
 
     const prompt = `${SYSTEM_PROMPT}\n\nCONTEXT:\n${context}\n\nQUESTION:\n${text}\n\nReply now with ONLY the JSON object requested.`;
 
-    const HF_API_TOKEN = process.env.HF_API_TOKEN;
-    const HF_MODEL = process.env.HF_MODEL;
-    if (!HF_API_TOKEN || !HF_MODEL) {
-      return res.status(500).json({ error: 'Server not configured: set HF_API_TOKEN and HF_MODEL in env vars.' });
+    const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    if (!GEMINI_KEY) {
+      return res.status(500).json({ error: 'Server not configured: set GEMINI_API_KEY (and optional GEMINI_MODEL).' });
     }
 
-    // HF router (api-inference host deprecated)
-    const url = `https://router.huggingface.co/hf-inference/models/${encodeURIComponent(HF_MODEL)}`;
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${HF_API_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 250,
-          temperature: 0.0
-        }
-      })
+    const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+    const model = genAI.getGenerativeModel({
+      model: GEMINI_MODEL,
+      systemInstruction: SYSTEM_PROMPT
     });
 
-    if (!resp.ok) {
-      const body = await resp.text().catch(()=>'<no body>');
-      console.error('HF error', resp.status, body);
-      return res.status(502).json({ error: 'Model inference failed', details: body });
-    }
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 300
+      }
+    });
 
-    const data = await resp.json();
+    const response = result?.response;
+    const candidates = response?.candidates || [];
     let generated = '';
-    if (Array.isArray(data) && data[0]) {
-      generated = data[0].generated_text || data[0].output || JSON.stringify(data[0]);
-    } else if (data && typeof data === 'object') {
-      generated = data.generated_text || data.output || JSON.stringify(data);
+    if (candidates.length && candidates[0]?.content?.parts?.length) {
+      generated = candidates[0].content.parts.map(p => p.text || '').join('\n');
     } else {
-      generated = typeof data === 'string' ? data : JSON.stringify(data);
+      generated = response?.text?.() || '';
     }
 
     const match = (generated || '').match(/\{[\s\S]*\}/);

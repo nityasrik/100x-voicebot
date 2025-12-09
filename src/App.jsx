@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 
 /**
- * Demo mode off so frontend calls the /api/chat endpoint (HF-backed).
+ * Demo mode off so frontend calls the /api/chat endpoint (Gemini-backed).
  */
 const DEMO_MODE = false;
 
@@ -214,7 +214,7 @@ function App() {
           <div className="small">Speak or type; I’ll answer and speak back.</div>
         </div>
         <div className="small" style={{display:'flex', alignItems:'center', gap:8}}>
-          <span>Live: {DEMO_MODE ? 'demo' : 'HF'}</span>
+          <span>Live: {DEMO_MODE ? 'demo' : 'Gemini'}</span>
           <span className={`pill ${status}`}>{status === 'thinking' ? 'typing…' : status}</span>
           <label className="toggle">
             <input
