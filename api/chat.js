@@ -10,7 +10,7 @@ import path from 'path';
  *
  * Env vars:
  *   GEMINI_API_KEY = <your Gemini API key>
- *   GEMINI_MODEL   = <model id, default "gemini-1.5-flash">
+ *   GEMINI_MODEL   = <model id, default "gemini-pro">
  */
 
 const SYSTEM_PROMPT = `
@@ -60,14 +60,14 @@ function buildContext(query = '', kb = []) {
       if (tok.length > 2 && t.includes(tok)) { hits.add(item); break; }
     }
   }
-  const life = kb.find(k=>k.id==='KB_LIFE');
-  const superpower = kb.find(k=>k.id==='KB_SUPERPOWER');
-  const interests = kb.find(k=>k.id==='KB_PERSONAL');
+  const life = kb.find(k => k.id === 'KB_LIFE');
+  const superpower = kb.find(k => k.id === 'KB_SUPERPOWER');
+  const interests = kb.find(k => k.id === 'KB_PERSONAL');
   const anchors = [life, superpower].filter(Boolean);
   const selected = [...new Set([...anchors, ...hits])];
   return {
-    context: selected.map(k=>`[${k.id}] ${k.text}`).join("\n\n"),
-    sources: selected.map(k=>k.id)
+    context: selected.map(k => `[${k.id}] ${k.text}`).join("\n\n"),
+    sources: selected.map(k => k.id)
   };
 }
 
@@ -81,12 +81,12 @@ export default async function handler(req, res) {
     }
 
     const KB = await loadKB();
-    const lifeText = KB.find(k=>k.id==='KB_LIFE')?.text;
-    const superpowerText = KB.find(k=>k.id==='KB_SUPERPOWER')?.text;
-    const growText = KB.find(k=>k.id==='KB_GROW')?.text;
-    const pushText = KB.find(k=>k.id==='KB_PUSH')?.text;
-    const misText = KB.find(k=>k.id==='KB_MISCONCEPTION')?.text;
-    const interestsText = KB.find(k=>k.id==='KB_PERSONAL')?.text || KB.find(k=>k.id==='KB_PERSONAL2')?.text;
+    const lifeText = KB.find(k => k.id === 'KB_LIFE')?.text;
+    const superpowerText = KB.find(k => k.id === 'KB_SUPERPOWER')?.text;
+    const growText = KB.find(k => k.id === 'KB_GROW')?.text;
+    const pushText = KB.find(k => k.id === 'KB_PUSH')?.text;
+    const misText = KB.find(k => k.id === 'KB_MISCONCEPTION')?.text;
+    const interestsText = KB.find(k => k.id === 'KB_PERSONAL')?.text || KB.find(k => k.id === 'KB_PERSONAL2')?.text;
 
     // Quick canned responses (high confidence)
     const q = text.toLowerCase();
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
     const prompt = `${SYSTEM_PROMPT}\n\nCONTEXT:\n${context}\n\nQUESTION:\n${text}\n\nReply now with ONLY the JSON object requested.`;
 
     const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-pro';
     if (!GEMINI_KEY) {
       return res.status(500).json({ error: 'Server not configured: set GEMINI_API_KEY (and optional GEMINI_MODEL).' });
     }
@@ -153,14 +153,14 @@ export default async function handler(req, res) {
         const answer = typeof parsed.answer === 'string' ? parsed.answer : String(parsed.answer || '');
         let sources = Array.isArray(parsed.sources) ? parsed.sources : (parsed.sources ? [String(parsed.sources)] : []);
         if (!sources.length) sources = [];
-        const confidence = sources.length ? (['high','medium','low'].includes(parsed.confidence) ? parsed.confidence : 'medium') : 'low';
-        return res.json({ answer: answer.slice(0,2000), confidence, sources });
+        const confidence = sources.length ? (['high', 'medium', 'low'].includes(parsed.confidence) ? parsed.confidence : 'medium') : 'low';
+        return res.json({ answer: answer.slice(0, 2000), confidence, sources });
       } catch (e) {
         console.error('JSON parse error from model output', e);
       }
     }
 
-    const fallbackText = (generated || '').trim().slice(0,2000);
+    const fallbackText = (generated || '').trim().slice(0, 2000);
     return res.json({ answer: fallbackText || "I don't have verified information in my sources.", confidence: 'low', sources: [] });
 
   } catch (err) {
