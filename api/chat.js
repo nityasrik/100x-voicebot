@@ -138,7 +138,7 @@ export default async function handler(req, res) {
     const prompt = `${SYSTEM_PROMPT}\n\nCONTEXT:\n${context}\n\nQUESTION:\n${text}\n\nReply now with ONLY the JSON object requested.`;
 
     const GEMINI_KEY = process.env.GEMINI_API_KEY;
-    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
     if (!GEMINI_KEY) {
       return res.status(500).json({ error: 'Server not configured: set GEMINI_API_KEY.' });
     }
