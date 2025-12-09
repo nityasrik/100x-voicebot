@@ -255,39 +255,41 @@ function App() {
       <div ref={chatRef} className="chat">
         {chat.length === 0 && <div className="small">Try a quick prompt or hold the mic.</div>}
         {chat.map((m, i) => (
-          <div key={i} className={`message ${m.who === 'you' ? 'you' : 'bot'}`}>
-            <div className="msg-head">
-              <span className="avatar">{m.who === 'you' ? 'You' : 'N'}</span>
-              <div className="msg-body">
-                {m.typing ? (
-                  <span className="typing">
-                    <span className="dot"></span>
-                    <span className="dot"></span>
-                    <span className="dot"></span>
-                  </span>
-                ) : (
-                  m.text
+          <div key={i} className={`message-row ${m.who === 'you' ? 'you' : 'bot'}`}>
+            <div className={`message ${m.who === 'you' ? 'you' : 'bot'}`}>
+              <div className="msg-head">
+                <span className="avatar">{m.who === 'you' ? 'You' : 'N'}</span>
+                <div className="msg-body">
+                  {m.typing ? (
+                    <span className="typing">
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                    </span>
+                  ) : (
+                    m.text
+                  )}
+                </div>
+              </div>
+              <div className="message-meta">
+                {m.who === 'bot' && !m.typing && (m.confidence || (m.sources && m.sources.length)) && (
+                  <div className="chips">
+                    {m.confidence && <span className="chip">Confidence: {m.confidence}</span>}
+                    {m.sources && m.sources.length ? m.sources.map(s => (
+                      <span key={s} className="chip">{s.replace('KB_', '')}</span>
+                    )) : null}
+                  </div>
+                )}
+                {m.who === 'bot' && !m.typing && !isVoiceMode && (
+                  <button
+                    className="play-btn"
+                    aria-label="Play this message"
+                    onClick={() => speak(m.text)}
+                  >
+                    {isSpeaking ? <span className="mini-bars speaking"></span> : '🔊'}
+                  </button>
                 )}
               </div>
-            </div>
-            <div className="message-meta">
-              {m.who === 'bot' && !m.typing && (m.confidence || (m.sources && m.sources.length)) && (
-                <div className="chips">
-                  {m.confidence && <span className="chip">Confidence: {m.confidence}</span>}
-                  {m.sources && m.sources.length ? m.sources.map(s => (
-                    <span key={s} className="chip">{s.replace('KB_', '')}</span>
-                  )) : null}
-                </div>
-              )}
-              {m.who === 'bot' && !m.typing && !isVoiceMode && (
-                <button
-                  className="play-btn"
-                  aria-label="Play this message"
-                  onClick={() => speak(m.text)}
-                >
-                  {isSpeaking ? <span className="mini-bars speaking"></span> : '🔊'}
-                </button>
-              )}
             </div>
           </div>
         ))}

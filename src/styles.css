@@ -46,6 +46,16 @@ body{
   border:1px solid rgba(255,255,255,0.35);
   backdrop-filter: blur(10px);
 }
+.message-row{
+  display:flex;
+  width:100%;
+}
+.message-row.you{
+  justify-content:flex-end;
+}
+.message-row.bot{
+  justify-content:flex-start;
+}
 .message{
   padding:10px 12px;
   border-radius:16px;
