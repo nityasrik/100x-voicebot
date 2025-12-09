@@ -23,8 +23,8 @@ export default async function handler(req, res) {
     if (!apiKey) return res.status(500).json({ error: 'ELEVENLABS_API_KEY not set' });
 
     // 3. SET YOUR NEW VOICE ID HERE
-    // Using the ID you found: m8ysB8KEJV5BeYQnOtWN
-    const voiceId = 'm8ysB8KEJV5BeYQnOtWN';
+    // Using the ID from ElevenLabs: 6BZyx2XekeeXOkTVn8un
+    const voiceId = '6BZyx2XekeeXOkTVn8un';
 
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
     const resp = await fetch(url, {
