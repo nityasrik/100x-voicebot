@@ -1,0 +1,162 @@
+import React, { useState, useRef } from 'react';
+
+/**
+ * Demo mode on so you can run locally without any API keys.
+ */
+const DEMO_MODE = true;
+
+const demoAnswers = {
+  life: "I’m a third-year engineering student from Bengaluru who blends design and code. I started with curiosity for making things, learned Figma and frontend development, and build creative projects—like RainSafe (a hyperlocal flood alert), OvaBloom (a PCOS companion), and a playful magical ball game—so I can turn ideas into interactive experiences.",
+  superpower: "My #1 superpower is creative problem-solving: I combine design thinking with code to ship simple, useful prototypes quickly and iterate based on feedback.",
+  grow: "Top three areas I want to grow in are: (1) backend systems and scalable deployments, (2) advanced ML/LLM tooling and RAG pipelines, and (3) system design and architecture for production-grade apps.",
+  misconception: "Many coworkers assume I prefer working alone because I’m focused; in reality I do my best work in short, collaborative sessions and by sharing early mockups to gather feedback.",
+  push: "I push my boundaries by shipping imperfect versions quickly, setting small time-boxed challenges, asking for feedback, and iterating fast—this forces learning and removes perfection paralysis."
+}
+
+function App(){
+  const [chat, setChat] = useState([]);
+  const [listening, setListening] = useState(false);
+  const chatRef = useRef();
+
+  const append = (who, text) => {
+    setChat(c => [...c, { who, text }]);
+    setTimeout(()=>{ chatRef.current?.scrollTo({top: chatRef.current.scrollHeight, behavior:'smooth'}); }, 50)
+  }
+
+  // Web Speech API
+  const startListening = async () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SpeechRecognition) {
+      alert('SpeechRecognition not supported in this browser. Use Chrome on desktop or Android for best support.');
+      return;
+    }
+    const recog = new SpeechRecognition();
+    recog.lang = 'en-US';
+    recog.interimResults = false;
+    recog.onstart = () => setListening(true);
+    recog.onend = () => setListening(false);
+    recog.onerror = (e) => {
+      setListening(false);
+      console.error(e);
+      alert('Microphone error: ' + (e.error || 'unknown'));
+    };
+    recog.onresult = async (e) => {
+      const text = e.results[0][0].transcript;
+      append('you', text);
+      await sendToServer(text);
+    };
+    recog.start();
+  }
+
+  const stopListening = () => {
+    setListening(false);
+  }
+
+  const sendToServer = async (text) => {
+    if(DEMO_MODE){
+      const q = text.toLowerCase();
+      let reply = "Sorry, I don't have a demo answer for that. Try the example quick prompts.";
+      if(q.includes('life') || q.includes('story') || q.includes('bio')) reply = demoAnswers.life;
+      if(q.includes('superpower') || q.includes('super power') || q.includes('strength')) reply = demoAnswers.superpower;
+      if(q.includes('top 3') || q.includes('grow') || q.includes('areas')) reply = demoAnswers.grow;
+      if(q.includes('misconception') || q.includes('coworker') || q.includes('people get wrong')) reply = demoAnswers.misconception;
+      if(q.includes('push') || q.includes('boundary') || q.includes('challenge')) reply = demoAnswers.push;
+      append('bot', reply);
+      speak(reply);
+      return;
+    }
+
+    append('bot', 'Thinking…');
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ text })
+      });
+      const j = await res.json();
+      const textReply = j.answer || j.reply || JSON.stringify(j);
+      setChat(c => {
+        const copy = [...c];
+        if(copy.length && copy[copy.length-1].who==='bot' && copy[copy.length-1].text==='Thinking…'){
+          copy.pop();
+        }
+        return [...copy, { who:'bot', text: textReply }];
+      });
+      speak(textReply);
+    } catch(err){
+      console.error(err);
+      append('bot', 'Sorry, something went wrong while contacting the server.');
+    }
+  }
+
+  const speak = (text) => {
+    if(!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }
+
+  const quickAsk = async (key) => {
+    const mapping = {
+      life: "What should we know about your life story in a few sentences?",
+      superpower: "What's your #1 superpower?",
+      grow: "What are the top 3 areas you'd like to grow in?",
+      misconception: "What misconception do your coworkers have about you?",
+      push: "How do you push your boundaries and limits?"
+    }
+    const q = mapping[key];
+    append('you', q);
+    await sendToServer(q);
+  }
+
+  return (
+    <div className="container">
+      <div className="header">
+        <div>
+          <div className="title">VoiceBot — 100x Assessment</div>
+          <div className="small">Demo mode: {DEMO_MODE ? 'ON (no API key required)' : 'OFF (calls model endpoint)'}</div>
+        </div>
+        <div className="small">Hold mic to speak — mobile friendly</div>
+      </div>
+
+      <div ref={chatRef} className="chat">
+        {chat.length===0 && <div className="small">Try one of the quick prompts or press Hold to Speak.</div>}
+        {chat.map((m, i) => (
+          <div key={i} className={`message ${m.who==='you' ? 'you' : 'bot'}`}>
+            <strong>{m.who === 'you' ? 'You' : 'Bot'}:</strong> {m.text}
+          </div>
+        ))}
+      </div>
+
+      <div className="controls">
+        <button
+          className="mic"
+          onMouseDown={startListening}
+          onTouchStart={startListening}
+          onMouseUp={stopListening}
+          onTouchEnd={stopListening}
+        >
+          {listening ? 'Listening… Release to stop' : 'Hold to Speak'}
+        </button>
+
+        <button className="mic" onClick={()=>{ quickAsk('life') }}>Quick: Life</button>
+        <button className="mic" onClick={()=>{ quickAsk('superpower') }}>Quick: Superpower</button>
+        <button className="mic" onClick={()=>{ quickAsk('grow') }}>Quick: Grow</button>
+      </div>
+
+      <div className="quick">
+        <button onClick={()=>quickAsk('misconception')}>Coworker misconception</button>
+        <button onClick={()=>quickAsk('push')}>Push boundaries</button>
+      </div>
+
+      <div className="footer">
+        <div>When ready to deploy with a model, set <code>DEMO_MODE = false</code> and deploy to Vercel. See README for steps.</div>
+        <div style={{marginTop:8}}>Reminder: email your assessment and resume to <strong>bhumika@100x.inc</strong> with subject <em>GEN AI: GEN AI ROUND 1 ASSESSMENT (ISDC - YOUR NAME)</em></div>
+      </div>
+    </div>
+  );
+}
+
+export default App;

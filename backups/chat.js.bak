@@ -1,0 +1,82 @@
+import fetch from 'node-fetch';
+
+const SYSTEM_PROMPT = `
+You are the virtual voice of the applicant. Follow these rules strictly:
+1) Only answer using the provided CONTEXT blocks below. If the answer is not supported by the context, reply: "I don't have verified information in my sources."
+2) Keep answers concise (<= 120 words).
+3) Return JSON only in this format:
+{"answer": "<short answer here>", "confidence": "<high|medium|low>", "sources": ["SRC1","SRC2"]}
+End of instructions.
+`;
+
+const KNOWLEDGE_BASE = [
+  { id: 'SRC1', text: 'I am a third-year engineering student in Bengaluru with experience in HTML, CSS, JavaScript, React, Node.js, and AI/ML techniques.' },
+  { id: 'SRC2', text: 'I completed a Figma Bootcamp and enjoy UI/UX design; I prefer casual conversations and creative problem solving.' },
+  { id: 'SRC3', text: 'I have built projects including RainSafe (flood alert), OvaBloom (PCOS companion), and a magical ball game with exploration mechanics.' }
+];
+
+export default async function handler(req, res) {
+  try {
+    const { text } = req.body || {};
+    if (!text) return res.status(400).json({ error: 'no text provided' });
+
+    if (!process.env.HF_API_TOKEN || !process.env.HF_MODEL) {
+      return res.status(500).json({
+        error: 'Server not configured with HF_API_TOKEN and/or HF_MODEL. Please set env vars on deployment.'
+      });
+    }
+
+    const context = KNOWLEDGE_BASE.map(k => `[${k.id}] ${k.text}`).join("\n\n");
+    const prompt = `${SYSTEM_PROMPT}\n\nCONTEXT:\n${context}\n\nQUESTION:\n${text}\n\nAnswer now in the JSON format requested.`;
+
+    const model = process.env.HF_MODEL;
+    const url = `https://api-inference.huggingface.co/models/${model}`;
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.HF_API_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        options: { wait_for_model: true }
+      })
+    });
+
+    if(!resp.ok){
+      const txt = await resp.text();
+      console.error('HF error', resp.status, txt);
+      return res.status(500).json({ error: 'Model endpoint error', details: txt });
+    }
+
+    const json = await resp.json();
+    let generated = '';
+    if (Array.isArray(json) && json[0]?.generated_text) generated = json[0].generated_text;
+    else if (json.generated_text) generated = json.generated_text;
+    else if (typeof json === 'string') generated = json;
+    else generated = JSON.stringify(json);
+
+    const jMatch = generated.match(/\{[\s\S]*\}/);
+    let parsed = null;
+    if (jMatch) {
+      try { parsed = JSON.parse(jMatch[0]); }
+      catch(e){ parsed = null; }
+    }
+
+    if (parsed) {
+      if(!parsed.sources) parsed.sources = KNOWLEDGE_BASE.map(k=>k.id);
+      return res.json(parsed);
+    } else {
+      return res.json({
+        answer: generated.slice(0,1000),
+        confidence: 'low',
+        sources: KNOWLEDGE_BASE.map(k=>k.id)
+      });
+    }
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error', details: String(err) });
+  }
+}

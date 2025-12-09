@@ -1,0 +1,22 @@
+[
+  {"id":"KB_LIFE","text":"I am Nitya, a fourth-year engineering student from Bengaluru with a creative mindset; I build frontends and explore AI/ML."},
+  {"id":"KB_EDU","text":"Education: B.E. in Computer Science; coursework includes data structures, networks, and fundamentals of machine learning."},
+  {"id":"KB_SKILLS","text":"Skills: HTML, CSS, JavaScript, React, Node.js, Tailwind, Figma, GSAP, Electron, and beginner Python for ML."},
+  {"id":"KB_PROJECT_OVABLOOM","text":"OvaBloom: frontend contributor. A PCOS companion app with explainable ML risk assessment, privacy-first local storage, and lifestyle tips."},
+  {"id":"KB_PROJECT_RAINSAFE","text":"RainSafe: hyperlocal flood alert prototype using environmental data and ML risk scoring; integrates map APIs and sends alerts to at-risk users."},
+  {"id":"KB_PROJECT_GAME","text":"Magical ball game: Toy Story-inspired exploration + stealth mechanics where different sports balls have unique behaviours and hiding spots."},
+  {"id":"KB_PROJECT_VOICENARY","text":"Voicenary: AI Voice Chat Application connecting to external AI services (Bolt-AI, ElevenLabs) via REST APIs; frontend built with React and Tailwind and deployed on Netlify."},
+  {"id":"KB_STYLE","text":"Voice style: casual, friendly, concise, honest. I prefer shipping imperfect versions quickly and iterating on feedback."},
+  {"id":"KB_SUPERPOWER","text":"Superpower: creative problem solving combining UI/UX thinking with engineering to quickly prototype useful products."},
+  {"id":"KB_GROW","text":"Growth areas: backend systems and scalable deployments, advanced ML/LLM tooling and RAG pipelines, and system design for production apps."},
+  {"id":"KB_WORK_PREF","text":"Work preference: short collaborative sessions and early mockups for feedback rather than long solitary focus stints."},
+  {"id":"KB_PERSONAL","text":"Interests: UI/UX design, full-stack development, small creative projects, crocheting, and making aesthetic social content."},
+  {"id":"KB_PERSONAL2","text":"Personality: creative, fast learner, always curious about AI and new tech; enjoys multiple hobbies outside of work."},
+  {"id":"KB_PUSH","text":"I push my boundaries by shipping imperfect versions quickly, time-boxing experiments, asking for feedback early, and iterating fast to learn."},
+  {"id":"KB_MISCONCEPTION","text":"Misconception: people think I prefer working alone because I focus deeply, but I do my best work in short collaborative sessions with quick feedback."},
+  {"id":"KB_TOOLING","text":"Tooling: comfortable with React, Tailwind, Electron; learning Node.js backend and experimenting with embeddings and RAG."},
+  {"id":"KB_RESUME_BULLET","text":"Resume bullet: Built a voice-first interview demo (React + Web Speech API) with retrieval-augmented HF LLM and guardrails for truthful answers."},
+  {"id":"KB_AVAIL","text":"Availability: full-time student but can commit to project-based freelance or remote work; open to internships abroad."},
+  {"id":"KB_FAQ","text":"FAQ: If asked about my superpower I say creative problem solving; if asked about growth I mention backend, LLMs, and system design."}
+]
+
